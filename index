@@ -1,0 +1,125 @@
+
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Marketing Segmentado - Clínica Francielly</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }
+    h2 { color: #0b1a33; margin-top: 40px; }
+    label, select, textarea { display: block; margin-top: 10px; width: 100%; }
+    select, textarea, button { padding: 10px; border-radius: 5px; border: 1px solid #ccc; margin-top: 5px; }
+    button { background: #0b1a33; color: white; cursor: pointer; }
+    button:hover { background: #142f58; }
+    .client { background: white; padding: 15px; margin-top: 15px; border-radius: 10px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); }
+    .message-input { margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h1>Marketing Segmentado - Clínica Francielly</h1>
+
+<!-- 1. Aniversariantes do Mês -->
+<h2>🎂 Aniversariantes do Mês</h2>
+<button onclick="listarAniversariantes()">Listar Aniversariantes</button>
+<div id="aniversariantes"></div>
+
+<!-- 2. Filtro por Sexo e Estado Civil -->
+<h2>📋 Filtro por Sexo e Estado Civil</h2>
+<label>Sexo:
+  <select id="filtroSexo">
+    <option value="">Todos</option>
+    <option value="Feminino">Feminino</option>
+    <option value="Masculino">Masculino</option>
+  </select>
+</label>
+<label>Estado Civil:
+  <select id="filtroEstadoCivil">
+    <option value="">Todos</option>
+    <option value="Solteiro(a)">Solteiro(a)</option>
+    <option value="Casado(a)">Casado(a)</option>
+    <option value="Divorciado(a)">Divorciado(a)</option>
+  </select>
+</label>
+<button onclick="filtrarPorSexoEstado()">Filtrar</button>
+<div id="filtroBase"></div>
+
+<!-- 3. Clientes Inativos -->
+<h2>⏳ Clientes Inativos</h2>
+<button onclick="listarInativos()">Listar Inativos (sem agendamento nos últimos 30 dias)</button>
+<div id="inativos"></div>
+
+<script>
+  const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+
+  function gerarCard(cliente, containerId, tipoMensagem) {
+    const div = document.createElement('div');
+    div.className = 'client';
+
+    const idCampo = tipoMensagem + cliente.whatsapp;
+    const msgPadrao = tipoMensagem === 'aniversario' ? 
+      `Parabéns, ${cliente.nome}! 🎉 Você ganhou um presente da Clínica Francielly.` :
+      tipoMensagem === 'inativo' ?
+      `Olá ${cliente.nome}, sentimos sua falta! Volte com 15% OFF este mês.` :
+      `Olá ${cliente.nome}, temos novidades para você na Clínica Francielly!`;
+
+    div.innerHTML = `
+      <strong>${cliente.nome}</strong><br>
+      📱 ${cliente.whatsapp}<br>
+      <textarea id="${idCampo}" class="message-input">${msgPadrao}</textarea>
+      <button onclick="enviarMensagem('${cliente.whatsapp}', document.getElementById('${idCampo}').value)">Enviar WhatsApp</button>
+    `;
+
+    document.getElementById(containerId).appendChild(div);
+  }
+
+  function listarAniversariantes() {
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth() + 1;
+    const container = document.getElementById('aniversariantes');
+    container.innerHTML = '';
+    clientes.forEach(c => {
+      const nasc = new Date(c.nascimento || '');
+      if (nasc.getMonth() + 1 === mesAtual) {
+        gerarCard(c, 'aniversariantes', 'aniversario');
+      }
+    });
+  }
+
+  function filtrarPorSexoEstado() {
+    const sexo = document.getElementById('filtroSexo').value;
+    const estadoCivil = document.getElementById('filtroEstadoCivil').value;
+    const container = document.getElementById('filtroBase');
+    container.innerHTML = '';
+    clientes.forEach(c => {
+      if ((!sexo || c.sexo === sexo) && (!estadoCivil || c.estadoCivil === estadoCivil)) {
+        gerarCard(c, 'filtroBase', 'filtro');
+      }
+    });
+  }
+
+  function listarInativos() {
+    const container = document.getElementById('inativos');
+    container.innerHTML = '';
+    const hoje = new Date();
+    clientes.forEach(c => {
+      if (!c.procedimentos || !Array.isArray(c.procedimentos) || c.procedimentos.length === 0) {
+        gerarCard(c, 'inativos', 'inativo');
+      } else {
+        const ult = new Date(c.procedimentos[c.procedimentos.length - 1].data);
+        const diff = (hoje - ult) / (1000 * 60 * 60 * 24);
+        if (diff > 30) gerarCard(c, 'inativos', 'inativo');
+      }
+    });
+  }
+
+  function enviarMensagem(numero, mensagem) {
+    const link = `https://wa.me/55${numero.replace(/\D/g, '')}?text=${encodeURIComponent(mensagem)}`;
+    window.open(link, '_blank');
+  }
+</script>
+
+</body>
+</html>
